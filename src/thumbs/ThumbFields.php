@@ -10,7 +10,7 @@ namespace svsoft\yii\imagethumb\thumbs;
 
 use Imagine\Image\ImageInterface;
 
-class ThumbWithFields  extends AbstractThumb
+class ThumbFields  extends AbstractThumb
 {
     public $color = '#FFFFFF';
     /**
