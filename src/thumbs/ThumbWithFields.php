@@ -9,10 +9,15 @@
 namespace svsoft\yii\imagethumb\thumbs;
 
 use Imagine\Image\ImageInterface;
-use svsoft\yii\imagethumb\exceptions\NotImageException;
 
 class ThumbWithFields  extends AbstractThumb
 {
+    public $color = '#FFFFFF';
+    /**
+     * @var float 0..1
+     */
+    public $opacity = 0;
+
     /**
      * @param $filePath
      *
@@ -39,7 +44,8 @@ class ThumbWithFields  extends AbstractThumb
         $image = $image->thumbnail($size, ImageInterface::THUMBNAIL_INSET);
         $width = $image->getSize()->getWidth();
         $height = $image->getSize()->getHeight();
-        $image = $imagine->create($size)->paste($image, new \Imagine\Image\Point(($size->getWidth() - $width)/2, ($size->getHeight() - $height)/2));
+        $color = (new \Imagine\Image\Palette\RGB())->color($this->color, intval($this->opacity * 100));
+        $image = $imagine->create($size, $color)->paste($image, new \Imagine\Image\Point(($size->getWidth() - $width)/2, ($size->getHeight() - $height)/2));
 
         return $image;
     }
