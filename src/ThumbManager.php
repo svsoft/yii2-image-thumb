@@ -120,11 +120,14 @@ class ThumbManager extends BaseObject implements ThumbManagerInterface
 
         $thumbFilePath = $this->thumbDirPath . DIRECTORY_SEPARATOR . $thumb->generateFileName($filePath);
 
-        try
+        if (!file_exists($thumbFilePath))
         {
-            $thumb->create($filePath, $this->thumbDirPath);
+            try
+            {
+                $thumb->create($filePath, $this->thumbDirPath);
+            }
+            catch(DirectoryNotFoundException $exception) { }
         }
-        catch(DirectoryNotFoundException $exception) { }
 
         return $thumbFilePath;
     }
