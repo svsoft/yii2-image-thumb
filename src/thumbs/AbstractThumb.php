@@ -104,7 +104,7 @@ abstract class AbstractThumb  extends BaseObject implements ThumbInterface
     /**
      * @return \Imagine\Gd\Imagine
      */
-    static function getImagine()
+    static protected function getImagine()
     {
         if (self::$imagine === null)
             self::$imagine = new \Imagine\Gd\Imagine();
