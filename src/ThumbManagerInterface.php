@@ -20,7 +20,6 @@ use yii\base\InvalidConfigException;
  */
 interface ThumbManagerInterface
 {
-
     /**
      *
      * Поключу получает элемент из массива $thumbs,
