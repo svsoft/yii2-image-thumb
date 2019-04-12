@@ -8,6 +8,9 @@
 
 namespace svsoft\yii\imagethumb;
 
+use svsoft\yii\imagethumb\exceptions\DirectoryNotFoundException;
+use svsoft\yii\imagethumb\exceptions\FileNotFoundException;
+use svsoft\yii\imagethumb\exceptions\ImageProcessingErrorException;
 use svsoft\yii\imagethumb\thumbs\Thumb;
 use svsoft\yii\imagethumb\thumbs\ThumbInterface;
 use yii\base\BaseObject;
@@ -19,7 +22,7 @@ use yii\helpers\FileHelper;
  * Class ThumbManager
  * @package svsoft\yii\imagethumb
  */
-class ThumbManager extends BaseObject
+class ThumbManager extends BaseObject implements ThumbManagerInterface
 {
     /**
      * @var ThumbInterface[]|array
@@ -36,6 +39,8 @@ class ThumbManager extends BaseObject
     public $thumbDirPath = '@app/web/resize';
 
     public $thumbWebDirPath = '@web/resize';
+
+    public $blankFilePath;
 
     /**
      * @throws InvalidConfigException
@@ -99,55 +104,82 @@ class ThumbManager extends BaseObject
     }
 
     /**
-     * Возвращает Урл до превьюшки
-     *
-     * @param $filePath
-     * @param string|ThumbInterface $thumb ключ из массива $thumbs, либо объект
-     *
-     * @return null|string
-     * @throws \yii\base\InvalidConfigException
-     */
-    public function getThumbUrl($filePath, $thumb)
-    {
-        if (!$thumb instanceof ThumbInterface)
-            $thumb = $this->getThumb($thumb);
-
-        if (!$thumbFilePath = $this->getThumbFilePath($filePath, $thumb))
-            return null;
-
-        return $this->thumbWebDirPath . DIRECTORY_SEPARATOR . $thumb->generateFileName($filePath);
-    }
-
-    /**
      * Возвращает путь до файла превью картинки, создает файл если путь не найден
      *
      * @param $filePath
      * @param string|ThumbInterface $thumb ключ из массива $thumbs, либо объект
      *
-     * @return null|string
-     * @throws \yii\base\InvalidConfigException
+     * @return string
+     * @throws InvalidConfigException
+     * @throws ImageProcessingErrorException
+     * @throws FileNotFoundException
      */
-    public function getThumbFilePath($filePath, $thumb)
+    public function create($filePath, $thumb)
+    {
+        $thumb = $this->getInstanceThumb($thumb);
+
+        $thumbFilePath = $this->thumbDirPath . DIRECTORY_SEPARATOR . $thumb->generateFileName($filePath);
+
+        try
+        {
+            $thumb->create($filePath, $this->thumbDirPath);
+        }
+        catch(DirectoryNotFoundException $exception) { }
+
+        return $thumbFilePath;
+    }
+
+    /**
+     * Возвращает урл до файла превью
+     *
+     * @param $filePath
+     * @param $thumb
+     *
+     * @return null|string
+     * @throws InvalidConfigException
+     */
+    function thumb($filePath, $thumb)
+    {
+        if (!$filePath && $this->blankFilePath)
+            $filePath = $this->blankFilePath;
+
+        if (!$filePath)
+            return null;
+
+        try
+        {
+            $thumbFilePath = $this->create($filePath, $thumb);
+            $thumbFileName =  pathinfo($thumbFilePath, PATHINFO_BASENAME);
+        }
+        catch(\Throwable $exception)
+        {
+            \Yii::error($exception->getMessage());
+
+            $thumb = $this->getInstanceThumb($thumb);
+            $thumbFileName = $thumb->generateFileName($filePath);
+        }
+
+        $url = $this->thumbWebDirPath . DIRECTORY_SEPARATOR . $thumbFileName;
+
+        return $url;
+    }
+
+    /**
+     * @param $thumb
+     *
+     * @return ThumbInterface
+     * @throws InvalidConfigException
+     */
+    protected function getInstanceThumb($thumb)
     {
         if (!$thumb instanceof ThumbInterface)
             $thumb = $this->getThumb($thumb);
 
-        $thumbFilePath = $this->thumbDirPath . DIRECTORY_SEPARATOR . $thumb->generateFileName($filePath);
+        return $thumb;
+    }
 
-        if (!file_exists($thumbFilePath))
-        {
-            try
-            {
-                $thumb->create($filePath, $this->thumbDirPath);
-            }
-            catch(\Throwable $exception)
-            {
-                Yii::error($exception->getMessage());
-
-                return null;
-            }
-        }
-
-        return $thumbFilePath;
+    protected function getThumbWebPath($filename)
+    {
+        return $this->thumbDirPath . DIRECTORY_SEPARATOR . $filename;
     }
 }

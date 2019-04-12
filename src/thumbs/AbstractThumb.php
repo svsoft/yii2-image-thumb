@@ -81,7 +81,7 @@ abstract class AbstractThumb  extends BaseObject implements ThumbInterface
             throw new ImageProcessingErrorException("\"{$filePath}\" is not image");
         }
 
-        $this->process($image);
+        $image = $this->process($image);
 
         $thumbFilePath = $thumbDirPath . DIRECTORY_SEPARATOR . $this->generateFilename($filePath);
 
