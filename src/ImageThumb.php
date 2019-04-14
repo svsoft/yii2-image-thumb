@@ -8,16 +8,11 @@
 
 namespace svsoft\yii\imagethumb;
 
-use svsoft\yii\imagethumb\exceptions\DirectoryNotFoundException;
-use svsoft\yii\imagethumb\exceptions\FileNotFoundException;
-use svsoft\yii\imagethumb\exceptions\ImageProcessingErrorException;
-use svsoft\yii\imagethumb\thumbs\Thumb;
 use svsoft\yii\imagethumb\thumbs\ThumbInterface;
 use yii\base\BaseObject;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
-use yii\helpers\FileHelper;
 
 /**
  * Class ImageThumb
@@ -50,6 +45,12 @@ class ImageThumb extends BaseObject implements ImageThumbInterface
      */
     public $thumbManager;
 
+
+    /**
+     * @var ThumbStorageInterface
+     */
+    protected $thumbStorage;
+
     /**
      * @throws InvalidConfigException
      * @throws \yii\base\Exception
@@ -68,7 +69,6 @@ class ImageThumb extends BaseObject implements ImageThumbInterface
         if (!$this->thumbWebDirPath)
             throw new InvalidConfigException('Property thumbWebDirPath must be set');
 
-
         $this->thumbManager = ArrayHelper::merge([
             'class' => ThumbManager::class,
             'thumbs' => $this->thumbs,
@@ -77,46 +77,7 @@ class ImageThumb extends BaseObject implements ImageThumbInterface
 
         $this->thumbManager = Yii::createObject($this->thumbManager);
 
-        if (!file_exists($this->thumbDirPath))
-        {
-            FileHelper::createDirectory($this->thumbDirPath);
-        }
-        elseif (!is_dir($this->thumbDirPath))
-        {
-            throw new InvalidConfigException("\"{$this->thumbDirPath}\" in not directory");
-        }
-
-        if (!$this->defaultThumbClass)
-            $this->defaultThumbClass = Thumb::class;
-    }
-
-    /**
-     * Возвращает путь до файла превью картинки, создает файл если путь не найден
-     *
-     * @param $filePath
-     * @param string|ThumbInterface $thumb ключ из массива $thumbs, либо объект
-     *
-     * @return string
-     * @throws InvalidConfigException
-     * @throws ImageProcessingErrorException
-     * @throws FileNotFoundException
-     */
-    public function create($filePath, $thumb)
-    {
-        $thumb = $this->getInstanceThumb($thumb);
-
-        $thumbFilePath = $this->thumbDirPath . DIRECTORY_SEPARATOR . $thumb->generateFileName($filePath);
-
-        if (!file_exists($thumbFilePath))
-        {
-            try
-            {
-                $thumb->create($filePath, $this->thumbDirPath);
-            }
-            catch(DirectoryNotFoundException $exception) { }
-        }
-
-        return $thumbFilePath;
+        $this->thumbStorage = new ThumbStorage($this->thumbDirPath);
     }
 
     /**
@@ -138,7 +99,7 @@ class ImageThumb extends BaseObject implements ImageThumbInterface
 
         try
         {
-            $thumbFilePath = $this->create($filePath, $thumb);
+            $thumbFilePath = $this->thumbStorage->create($filePath, $thumb);
             $thumbFileName =  pathinfo($thumbFilePath, PATHINFO_BASENAME);
         }
         catch(\Throwable $exception)
